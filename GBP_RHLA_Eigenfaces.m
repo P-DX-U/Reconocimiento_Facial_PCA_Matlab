@@ -74,7 +74,8 @@ for i = 1:3
     pause(5)
 end
 
-%% Paso 4. Se calcula la matriz de covarianza.
+%% Comienzo del algoritmo PCA
+% Paso 4. Se calcula la matriz de covarianza.
 % Cuando calculamos la matriz de covarianza es más conveniente realizar la
 % operación M * M' que utilizar la función predefinida de Matlab "Cov()",
 % ya que "cov()" realizaría M' * M, resultando [5400 x 4096] x [4096 x 5400]
@@ -86,7 +87,7 @@ end
 % dimensiones.
 
 M = double(M);
-C = M*M';
+C = M'*M;
 
 %% Paso 5. Calcular los eigenfaces.
 % Esta vez se calculan los eigenvalores y eigenvectores asociados, es decir
@@ -95,42 +96,52 @@ C = M*M';
 
 % Calcular los eigenvectores y eigenvalores
 [eigenvectors, eigenvalues] = eig(C);
-%%
-% Ordenar los eigenvectores y eigenvalores en orden descendente de los
-% eigenvalores
-[eigenvalues, indices] = sort(diag(eigenvalues), 'descend');
-eigenvectors = eigenvectors(:, indices);
 
-% Se aplica la transformación PCA a los datos originales (Recordando que
-% alteramos el orden de multiplicación de matrices para obtener la matriz
-% de covarianza)
-rostrosIntOriginales = double(rostrosOriginales);
-%data_pca = eigenvectors' * rostrosIntOriginales;
-data_pca = eigenvectors' * M;
+%% Metodo 1
+Evalues = diag(eigenvalues);
 
-% Se muestran los eigenvalores en orden descendente
-disp(eigenvalues);
+% Los eigenvectores se ordenan descendentemente.
+Evalues = Evalues(end:-1:1);
+eigenvectors = eigenvectors(:,end:-1:1); eigenvectors=eigenvectors';  
+
+% Se genera el espacio de componentes PCA (PCA scores)
+pc = M * eigenvectors;
+
+% Se grafica el espacio PCA con las primeras dos componentes: PC1 and PC2
+plot(pc(1,:),pc(2,:),'.')  
+pause(5)
 
 % Se genera un vector de numeración ascendente para el eje X
-x = 1:size(eigenvalues);
+x = 1:size(Evalues);
 
 % Se grafican los eigenvalores, para visualizar su importancia relativa.
-scatter(x, eigenvalues);
+scatter(x, Evalues);
 
 xlim([0, 30]);
 ylim([0, 1.02e+10]);
 
-%% Paso 6. Se extraen los eigenvalores más representativos.
-% Como anteriormente de ordenó descendentemente a los eigenvalores y sus
-% eigenvectores asociados, podemos extraer los eigenvectores más
-% representativos, en este caso extraeremos 999 de los 4096.
-eigenfaces = [];
+%% Paso extra 3: Transformar a imagenes los eigenfaces.
+% Para fines didácticos, se guardara cada eigenface en un archivo de
+% imagen, para poder visualizar los patrones bizarros que se generan.
 
-for i = 1:999
-    eigenfaces = [eigenfaces data_pca(:,i)];
+% Especificar la ruta y nombre completo del archivo de salida
+ruta = 'eigenfaces/'; % Ruta de la carpeta donde se guardará la imagen
+
+eigenfaces = uint8(pc);
+
+for i = 1:size(eigenfaces,2)
+    % Construir el nombre del archivo con el índice
+    nombre_eigenface = sprintf('eigenface_%d.jpg', i); 
+    
+    % Combinar la ruta y nombre completo del archivo
+    ruta_completa = fullfile(ruta, nombre_eigenface);
+    I = reshape(eigenfaces(:,i),[64,64]);
+    % Guardar la imagen en formato JPEG con el nombre completo del archivo
+    imwrite(I, ruta_completa, 'JPEG');
 end
-%%
-eigenfaces = uint8(eigenfaces);
-I = reshape(eigenfaces(:,1),[64,64]);
-imshow(I);
+
+%% Paso 7. Reconocimiento Facial
+
+
+
 
