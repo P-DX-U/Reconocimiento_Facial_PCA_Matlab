@@ -76,15 +76,6 @@ end
 
 %% Comienzo del algoritmo PCA
 % Paso 4. Se calcula la matriz de covarianza.
-% Cuando calculamos la matriz de covarianza es más conveniente realizar la
-% operación M * M' que utilizar la función predefinida de Matlab "Cov()",
-% ya que "cov()" realizaría M' * M, resultando [5400 x 4096] x [4096 x 5400]
-%                                                ^                      ^
-%                                                |                      |
-%                                                 ______________________
-%                              Resultando una matriz de 5400^2 dimensiones.
-% Por lo tanto, si realizamos lo opuesto, obtendremos una matriz de 4096^2
-% dimensiones.
 
 M = double(M);
 C = M'*M;
