@@ -80,3 +80,38 @@ eigenfaces = [];
 for i = 1:999
     eigenfaces = [eigenfaces pc(:,i)];
 end
+
+%% Paso 7. Reconocimiento Facial
+
+entrada = imread("entrada\Michael_Jackson_0001.pgm");
+%imshow(entrada)
+
+entrada = entrada(:) - rostroPromedio;
+entrada = double(entrada);
+
+vect_c = pc' * entrada;
+
+pc = pc';
+
+similarity_score = arrayfun(@(n)1/ (1+norm(pc(:,n)-vect_c)),1:size(pc,2));
+
+% encuentra la imagen con mayor similitud
+[match_score,match_1x]= max(similarity_score);
+
+%%
+X = rand(8,1);
+Y = rand(8,1);
+
+D = abs(X - Y)
+
+
+%%
+% Vectores de ejemplo
+v1 = [1 2 3];
+v2 = [4 5 6];
+
+% Calcular la distancia entre los componentes
+distancia = abs(v1 - v2);
+
+% Mostrar el resultado
+disp(distancia);

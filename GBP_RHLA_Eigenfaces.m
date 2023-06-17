@@ -27,6 +27,7 @@ imageDim = xdim * ydim;
 % Leemos el conjunto de imagenes de prueba de un archivo de texto plano.
 nombres = importdata('lfwcrop_grey/lists/01_train_diff.txt');
 M = [];
+nombres_personas = []
 
 for i = 1:numel(nombres)
     nombresSeparados = split(nombres{i}, ' ');
@@ -35,6 +36,7 @@ for i = 1:numel(nombres)
         nombreCompleto = ['lfwcrop_grey/faces/' nombre '.pgm'];
     
         I = imread(nombreCompleto);
+        nombres_personas = cat(1, nombres_personas, cellstr(nombre));
 
 % Se reordena la imagen para hacerla una vector vertical
         I = reshape(I,[imageDim,1]);
@@ -67,46 +69,53 @@ M = M - rostroPromedio;
 
 for i = 1:3
     I = M(:,randi([1, 5400]));
-    %I = M(:,i)
     I = uint8(I);
     I = reshape(I,[64,64]);
     imshow(I);
     pause(5)
 end
 
-%% Comienzo del algoritmo PCA
-% Paso 4. Se calcula la matriz de covarianza.
+%% Paso 4. Se calcula la matriz de covarianza.
+% Comienzo del algoritmo PCA
 
 M = double(M);
-C = M'*M;
+C = M'*M; % Se calcula la matriz de covarianza
 
 %% Paso 5. Calcular los eigenfaces.
 % Esta vez se calculan los eigenvalores y eigenvectores asociados, es decir
 % los eigenfaces, que contaran con distinta importancia relativa de cada
 % componente principal en términos de la varianza explicada por los datos.
 
-% Calcular los eigenvectores y eigenvalores
+% Se calculan los eigenvectores y eigenvalores
 [eigenvectors, eigenvalues] = eig(C);
+% Se expanden los eigenvectores de espacio reducido
+eigenlarge = M * eigenvectors; 
 
-%% Metodo 1
+% Se obtiene la diagonal principal de los eigenvalores
 Evalues = diag(eigenvalues);
 
-% Los eigenvectores se ordenan descendentemente.
-Evalues = Evalues(end:-1:1);
-eigenvectors = eigenvectors(:,end:-1:1); eigenvectors=eigenvectors';  
+% Los eigenvectores se ordenan descendentemente en z
+[EvaC, EvaCi] = sort(Evalues, 'descend');
+z = eigenlarge(:, EvaCi);
+
+eigenfaces = [];
+% seleccionamos los mejores 100 o 400 eigenfaces
+for i = 1:400
+    eigenfaces = [eigenfaces z(:,i)];
+end
 
 % Se genera el espacio de componentes PCA (PCA scores)
-pc = M * eigenvectors;
+pc = eigenfaces' * M;
 
 % Se grafica el espacio PCA con las primeras dos componentes: PC1 and PC2
 plot(pc(1,:),pc(2,:),'.')  
 pause(5)
 
 % Se genera un vector de numeración ascendente para el eje X
-x = 1:size(Evalues);
+x = 1:size(EvaC);
 
 % Se grafican los eigenvalores, para visualizar su importancia relativa.
-scatter(x, Evalues);
+scatter(x, EvaC);
 
 xlim([0, 30]);
 ylim([0, 1.02e+10]);
@@ -115,24 +124,55 @@ ylim([0, 1.02e+10]);
 % Para fines didácticos, se guardara cada eigenface en un archivo de
 % imagen, para poder visualizar los patrones bizarros que se generan.
 
-% Especificar la ruta y nombre completo del archivo de salida
+% Se especifica la ruta y nombre completo del archivo de salida
 ruta = 'eigenfaces/'; % Ruta de la carpeta donde se guardará la imagen
 
-eigenfaces = uint8(pc);
-
 for i = 1:size(eigenfaces,2)
-    % Construir el nombre del archivo con el índice
+    % Se construye el nombre del archivo con el índice
     nombre_eigenface = sprintf('eigenface_%d.jpg', i); 
     
-    % Combinar la ruta y nombre completo del archivo
+    % Se combina la ruta y nombre completo del archivo
     ruta_completa = fullfile(ruta, nombre_eigenface);
     I = reshape(eigenfaces(:,i),[64,64]);
-    % Guardar la imagen en formato JPEG con el nombre completo del archivo
+    % Se guarda el eigenface en formato JPEG
     imwrite(I, ruta_completa, 'JPEG');
 end
 
 %% Paso 7. Reconocimiento Facial
 
+% Se lee un rostro de entrada
+entrada = imread("entrada/Pablo_Gonzalez_0004.pgm");
+I_entrada = entrada;
+entrada = entrada(:) - rostroPromedio;
+entrada = double(entrada);
 
+% Se obtienen los coeficientes de proyección del rostro sobre las k
+% eigenfaces seleccionadas.
+vect_c = entrada' * eigenfaces;
+
+% Se calculan las distancias entre los coeficientes del rostro de entrada y
+% los coeficientes de cada rostro en la base de datos.
+distancias = [];
+for i = 1:size(pc,2)
+    d = abs(vect_c' - pc(:,i));
+    distancias = [distancias d];
+end
+
+distancias = sum(distancias,1);
+
+% Se encuentra el rostro con mayor similitud
+[match_score,match_1x]= min(distancias);
+
+I = ['lfwcrop_grey/faces/' char(nombres_personas(match_1x,1)) '.pgm'];
+
+% Se imprimen el rostro de entrada y el rostro identificado.
+figure;
+subplot(1, 2, 1);
+imshow(I_entrada);
+title('Entrada');
+
+subplot(1, 2, 2);
+imshow(I);
+title('Detección');
 
 
