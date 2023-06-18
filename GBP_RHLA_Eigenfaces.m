@@ -1,4 +1,4 @@
-%%
+%% 19 de junio de 2023
 % Proyecto final
 % Reconocimiento facial usando Eigenfaces (PCA)
 
@@ -108,7 +108,7 @@ end
 pc = eigenfaces' * M;
 
 % Se grafica el espacio PCA con las primeras dos componentes: PC1 and PC2
-plot(pc(1,:),pc(2,:),'.')  
+plot(eigenfaces(1,:),eigenfaces(2,:),'.')  
 pause(5)
 
 % Se genera un vector de numeración ascendente para el eje X
